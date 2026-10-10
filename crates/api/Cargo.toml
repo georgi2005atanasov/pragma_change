@@ -1,0 +1,32 @@
+[package]
+name = "pragma-api"
+version.workspace = true
+edition.workspace = true
+[dependencies]
+pragma-domain.workspace = true
+pragma-engine.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+hex.workspace = true
+axum = { version = "0.8", features = ["multipart"] }
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "json", "chrono", "migrate"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+argon2 = "0.5"
+rand = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+csv = "1"
+tar = "0.4"
+flate2 = "1"
+subtle = "2"
+aes-gcm = "0.10"
+base64 = "0.22"
+hmac = "0.12"
+
+pragma-behavior = { path = "../behavior" }
+pragma-behavior-contract = { path = "../behavior-contract" }

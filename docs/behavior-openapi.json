@@ -1,0 +1,1016 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PragmaChange Behavior API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8090"
+    }
+  ],
+  "security": [
+    {
+      "applicationToken": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "applicationToken": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "administratorToken": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "event_id",
+          "application_id",
+          "actor",
+          "action",
+          "session_id",
+          "timestamp_ms",
+          "outcome"
+        ],
+        "properties": {
+          "version": {
+            "const": 1
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "application_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "action": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "maxLength": 256
+          },
+          "session_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "timestamp_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outcome": {
+            "enum": [
+              "attempted",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "cohort": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "sequence_start": {
+            "type": "boolean"
+          },
+          "sequence_number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "attributes": {
+            "type": "object",
+            "maxProperties": 32,
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "resource": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          },
+          "workflow_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          },
+          "correlation_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "For a confirmed outcome, the event_id of its prior evaluation."
+          }
+        }
+      },
+      "RecordingManifest": {
+        "title": "PragmaChange recording manifest v1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format_version",
+          "recording_id",
+          "config",
+          "row_count",
+          "byte_count",
+          "content_sha256",
+          "finalized"
+        ],
+        "properties": {
+          "format_version": {
+            "const": 1
+          },
+          "recording_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "format"
+            ],
+            "properties": {
+              "format": {
+                "enum": [
+                  "request_events",
+                  "behavior_events"
+                ]
+              },
+              "application_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "pipeline_version_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "endpoint_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "schema_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "allowed_headers": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "default": []
+              },
+              "allowed_query": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "default": []
+              },
+              "allowed_body_fields": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "default": []
+              },
+              "allowed_attributes": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "default": []
+              },
+              "include_client_ip": {
+                "type": "boolean",
+                "default": false
+              },
+              "max_bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4194304,
+                "default": 4194304
+              },
+              "max_records": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000,
+                "default": 100000
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "format": {
+                      "const": "request_events"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "endpoint_id",
+                    "pipeline_version_id",
+                    "schema_hash"
+                  ],
+                  "properties": {
+                    "endpoint_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "pipeline_version_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "schema_hash": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "format": {
+                      "const": "behavior_events"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "application_id"
+                  ],
+                  "properties": {
+                    "application_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "pipeline_version_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "schema_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "row_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "byte_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4194304
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "finalized": {
+            "type": "boolean"
+          }
+        },
+        "description": "Import requires finalized=true, at least one row, exact byte/row counts and SHA-256 of UTF-8 records.jsonl including its final newline. Top-level pipeline bindings must equal config bindings. Records are at most 16 KiB each. Field string limits are UTF-8 byte limits."
+      }
+    }
+  },
+  "paths": {
+    "/v1/events": {
+      "post": {
+        "summary": "Record 1\u2013100 scoped events; deduplicate by event identity",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "events"
+                ],
+                "properties": {
+                  "events": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "$ref": "#/components/schemas/Event"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluate": {
+      "post": {
+        "summary": "Evaluate an attempted action before application side effects",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Event"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/apps": {
+      "get": {
+        "summary": "Authenticated behavior service operation: apps",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Authenticated behavior service operation: apps",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/apps/{id}/policy": {
+      "post": {
+        "summary": "Authenticated behavior service operation: apps/{id}/policy",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/apps/{id}/snapshots": {
+      "post": {
+        "summary": "Authenticated behavior service operation: apps/{id}/snapshots",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/apps/{id}/purge": {
+      "post": {
+        "summary": "Authenticated behavior service operation: apps/{id}/purge",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/apps/{id}/health": {
+      "get": {
+        "summary": "Authenticated behavior service operation: apps/{id}/health",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/apps/{id}/events/{event}/quarantine": {
+      "post": {
+        "summary": "Authenticated behavior service operation: apps/{id}/events/{event}/quarantine",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "event",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/snapshots": {
+      "get": {
+        "summary": "Authenticated behavior service operation: snapshots",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/snapshots/{id}/train": {
+      "post": {
+        "summary": "Authenticated behavior service operation: snapshots/{id}/train",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/models": {
+      "get": {
+        "summary": "Authenticated behavior service operation: models",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/models/{id}/activate": {
+      "post": {
+        "summary": "Authenticated behavior service operation: models/{id}/activate",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/models/{id}/replay": {
+      "post": {
+        "summary": "Authenticated behavior service operation: models/{id}/replay",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/jobs": {
+      "get": {
+        "summary": "Authenticated behavior service operation: jobs",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [],
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ]
+      }
+    },
+    "/admin/apps/{id}/imports": {
+      "post": {
+        "summary": "Import an offline recording as an immutable training snapshot",
+        "description": "Checks scope, counts and checksum; pseudonymizes identities and applies the service allowlist. Does not alter live history. Retries with identical recording ID and manifest return the original snapshot. Conflicting IDs or duplicate events are rejected. Maximum JSON request 16 MiB, content 4 MiB.",
+        "security": [
+          {
+            "administratorToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "manifest",
+                  "content"
+                ],
+                "properties": {
+                  "manifest": {
+                    "$ref": "#/components/schemas/RecordingManifest"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Snapshot ID, content_hash, event_count and live_state_changed=false"
+          },
+          "401": {
+            "description": "Administrator authentication required"
+          },
+          "422": {
+            "description": "Invalid, conflicting or incomplete recording"
+          }
+        }
+      }
+    }
+  }
+}

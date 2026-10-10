@@ -1,0 +1,17 @@
+FROM rust:1.98-bookworm AS builder
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY examples ./examples
+COPY docs ./docs
+COPY deploy ./deploy
+RUN cargo build --locked --release -p pragma-api -p pragma-engine
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates python3 openssh-client && rm -rf /var/lib/apt/lists/* && useradd --system --uid 10001 pragma && mkdir /artifacts && chown pragma /artifacts
+COPY --from=builder /src/target/release/pragma-api /usr/local/bin/pragma-api
+COPY --from=builder /src/target/release/pragma-cli /usr/local/bin/pragma-cli
+COPY scripts/remote /opt/pragmachange/remote
+ENV REMOTE_TRANSPORT=/opt/pragmachange/remote/transport.py
+USER pragma
+ENV BIND_ADDR=0.0.0.0:8080 ARTIFACT_DIR=/artifacts
+CMD ["pragma-api"]

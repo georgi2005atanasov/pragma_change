@@ -1,0 +1,33 @@
+# Optional behavior data plane. Its database and service are independent of Nginx.
+services:
+  behavior-db:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: behavior
+      POSTGRES_DB: behavior
+      POSTGRES_PASSWORD: ${BEHAVIOR_DB_PASSWORD:?required}
+    volumes:
+      - behavior_data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U behavior"]
+      interval: 5s
+      retries: 20
+  behavior:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.behavior
+    environment:
+      BEHAVIOR_DATABASE_URL: postgres://behavior:${BEHAVIOR_DB_PASSWORD}@behavior-db:5432/behavior
+      BEHAVIOR_ADMIN_TOKEN: ${BEHAVIOR_ADMIN_TOKEN:?required}
+      BEHAVIOR_PARTITION_SECRET: ${BEHAVIOR_PARTITION_SECRET:?required}
+    ports:
+      - "127.0.0.1:8090:8090"
+    depends_on:
+      behavior-db:
+        condition: service_healthy
+  api:
+    environment:
+      BEHAVIOR_URL: http://behavior:8090
+      BEHAVIOR_ADMIN_TOKEN: ${BEHAVIOR_ADMIN_TOKEN}
+volumes:
+  behavior_data:

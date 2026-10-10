@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PragmaChange recording manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "recording_id",
+    "config",
+    "row_count",
+    "byte_count",
+    "content_sha256",
+    "finalized"
+  ],
+  "properties": {
+    "format_version": {
+      "const": 1
+    },
+    "recording_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "request_events",
+            "behavior_events"
+          ]
+        },
+        "application_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "pipeline_version_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "endpoint_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "schema_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "allowed_headers": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "default": []
+        },
+        "allowed_query": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "default": []
+        },
+        "allowed_body_fields": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "default": []
+        },
+        "allowed_attributes": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "default": []
+        },
+        "include_client_ip": {
+          "type": "boolean",
+          "default": false
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4194304,
+          "default": 4194304
+        },
+        "max_records": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000,
+          "default": 100000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "format": {
+                "const": "request_events"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "endpoint_id",
+              "pipeline_version_id",
+              "schema_hash"
+            ],
+            "properties": {
+              "endpoint_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "pipeline_version_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "schema_hash": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "format": {
+                "const": "behavior_events"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "application_id"
+            ],
+            "properties": {
+              "application_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pipeline_version_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "schema_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "row_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "byte_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4194304
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "finalized": {
+      "type": "boolean"
+    }
+  },
+  "description": "Import requires finalized=true, at least one row, exact byte/row counts and SHA-256 of UTF-8 records.jsonl including its final newline. Top-level pipeline bindings must equal config bindings. Records are at most 16 KiB each. Field string limits are UTF-8 byte limits."
+}

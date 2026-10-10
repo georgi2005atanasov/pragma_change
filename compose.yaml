@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: pragma
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/setup-env.py}
+      POSTGRES_DB: pragma
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U pragma -d pragma"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  trainer:
+    build:
+      context: .
+      dockerfile: services/trainer/Dockerfile
+    environment:
+      TRAINER_TOKEN: ${TRAINER_TOKEN:?required}
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+    environment:
+      DATABASE_URL: postgres://pragma:${POSTGRES_PASSWORD}@postgres:5432/pragma
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?required}
+      TRAINER_URL: http://trainer:8001
+      TRAINER_TOKEN: ${TRAINER_TOKEN}
+      PARTITION_SECRET: ${PARTITION_SECRET:?required}
+      RUST_LOG: pragma_api=info
+    volumes:
+      - artifacts:/artifacts
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      trainer:
+        condition: service_started
+  portal:
+    build:
+      context: .
+      dockerfile: apps/portal/Dockerfile
+    environment:
+      API_URL: http://api:8080
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+  upstream:
+    image: python:3.12-slim-bookworm
+    profiles: [runtime]
+    volumes:
+      - ./examples/upstream.py:/app/upstream.py:ro
+    command: [python, /app/upstream.py]
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.nginx
+    profiles: [runtime]
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ./artifacts/deployment:/etc/nginx/pragmachange:ro
+    depends_on:
+      - upstream
+volumes:
+  postgres_data:
+  artifacts:
