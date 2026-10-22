@@ -1,0 +1,14 @@
+[package]
+name = "pragma-engine"
+version.workspace = true
+edition.workspace = true
+[dependencies]
+pragma-domain.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+hex.workspace = true
+hmac = "0.12"
+[dev-dependencies]

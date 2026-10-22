@@ -1,0 +1,36 @@
+# Private settings and local data
+.env
+.env.*
+!.env.example
+!.env.*.example
+.secrets/
+recordings/
+artifacts/
+*.pem
+*.key
+# Builds, dependencies and caches
+**/target/
+build/
+dist/
+**/node_modules/
+**/.next/
+**/.next-verification/
+**/.next-apache/
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+**/*.egg-info/
+**/bin/
+!crates/**/bin/
+!crates/**/bin/**
+**/obj/
+*.tsbuildinfo
+*.log
+# Local editor and verification output
+.idea/
+.vscode/
+.DS_Store
+**/test-results/
+**/playwright-report/
+AGENTS.md
+CLAUDE.md

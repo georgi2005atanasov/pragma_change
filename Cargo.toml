@@ -1,0 +1,22 @@
+[workspace]
+members = ["crates/domain", "crates/engine", "crates/ffi", "crates/api", "crates/behavior", "crates/behavior-contract"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["serde", "v4"] }
+thiserror = "2"
+sha2 = "0.10"
+hex = "0.4"
+pragma-domain = { path = "crates/domain" }
+pragma-engine = { path = "crates/engine" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

@@ -1,0 +1,19 @@
+{
+  "id":"11111111-1111-4111-8111-111111111111",
+  "endpoint_id":"22222222-2222-4222-8222-222222222222",
+  "api_host":"api.example.test",
+  "method":"POST",
+  "path_template":"/orders",
+  "extractors":[
+    {"name":"client","source":{"kind":"header","name":"X-Client-ID"}},
+    {"name":"amount","source":{"kind":"json_pointer","pointer":"/amount"}}
+  ],
+  "partitions":[{"name":"by_client","components":["client"]}],
+  "windows":[{"name":"last_second","duration_ms":1000}],
+  "features":[
+    {"name":"request_count","operation":"count","source":null,"partition":"by_client","window":"last_second"},
+    {"name":"amount_mean","operation":"mean","source":"amount","partition":"by_client","window":"last_second"},
+    {"name":"body_bytes","operation":"body_size","source":null,"partition":null,"window":null}
+  ],
+  "limits":{"max_body_bytes":65536,"max_partitions":10000,"max_events_per_partition":4096,"max_partition_bytes":1048576}
+}

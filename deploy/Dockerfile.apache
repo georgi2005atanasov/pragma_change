@@ -1,0 +1,41 @@
+ARG APACHE_BASE=debian:12-slim
+FROM rust:1.98-bookworm AS engine
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY docs ./docs
+COPY deploy ./deploy
+RUN cargo build --locked --release -p pragma-ffi -p pragma-engine
+
+FROM ${APACHE_BASE} AS module-build
+ARG SOURCE_REVISION=uncommitted
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends apache2 apache2-dev libapr1-dev libaprutil1-dev build-essential binutils dpkg-dev python3 ca-certificates nghttp2-client && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY --from=engine /src/target/release/libpragma_ffi.a /src/target/release/pragma-cli ./target/release/
+COPY apache ./apache
+COPY include ./include
+COPY scripts ./scripts
+COPY examples ./examples
+COPY deploy/apache.conf.example ./deploy/apache.conf.example
+ENV PRAGMA_RUST_LIB=/src/target/release/libpragma_ffi.a PRAGMA_CLI=/src/target/release/pragma-cli
+RUN scripts/build-apache.sh
+RUN python3 scripts/package-apache.py --revision "$SOURCE_REVISION" --output /packages
+# Install in a fresh runtime image, with no compiler or Apache development headers.
+FROM ${APACHE_BASE} AS package
+ENV DEBIAN_FRONTEND=noninteractive
+COPY --from=module-build /packages /packages
+RUN apt-get update && apt-get install -y --no-install-recommends /packages/*.deb nghttp2-client ca-certificates && rm -rf /var/lib/apt/lists/* && test ! -e /etc/apache2/mods-enabled/pragmachange.load && ! command -v apxs
+WORKDIR /src
+COPY scripts ./scripts
+COPY examples ./examples
+ENV PRAGMA_APACHE_MODULE=/usr/lib/apache2/modules/mod_pragmachange.so PRAGMA_CLI=/usr/lib/pragmachange/pragma-cli
+RUN python3 scripts/test-apache.py --mpm event --http2 --benchmark && python3 scripts/test-apache.py --mpm worker --http2 && python3 scripts/test-apache.py --mpm prefork
+RUN python3 -m unittest discover -s scripts/tests -p test_apache_deploy.py
+
+FROM scratch AS artifacts
+COPY --from=package /packages/ /
+COPY --from=package /src/build/apache-test-event/result.json /validation/event.json
+COPY --from=package /src/build/apache-test-event/benchmark.json /validation/benchmark.json
+COPY --from=package /src/build/apache-test-worker/result.json /validation/worker.json
+COPY --from=package /src/build/apache-test-prefork/result.json /validation/prefork.json

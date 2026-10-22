@@ -1,0 +1,40 @@
+# Install the matching libapache2-mod-pragmachange package and enable its loader:
+# sudo a2enmod pragmachange proxy proxy_http
+# These three directives belong outside VirtualHost/Location blocks.
+PragmaChangeRelease /etc/pragmachange/apache/current/release.json
+PragmaChangeSecretFile /etc/pragmachange/apache/partition_secret
+PragmaChangeStateMiB 64
+
+# Add this to the existing VirtualHost containing your API ProxyPass rules.
+# Keep your current TLS, authentication, routing, and load-balancer settings.
+# <Location /api/>
+#     PragmaChange On
+# </Location>
+# ProxyPass /api/ http://127.0.0.1:9000/api/
+# ProxyPassReverse /api/ http://127.0.0.1:9000/api/
+
+# Alternative: retain your existing balancer:// pool and enable its location.
+# Requires proxy_balancer, lbmethod_byrequests, and slotmem_shm.
+# <Proxy "balancer://application">
+#     BalancerMember http://127.0.0.1:9000
+#     BalancerMember http://127.0.0.1:9001
+# </Proxy>
+# ProxyPass /api/ balancer://application/api/
+# ProxyPassReverse /api/ balancer://application/api/
+
+# Required when mod_cache is loaded: inspection must precede cache handling.
+<IfModule cache_module>
+    CacheQuickHandler Off
+</IfModule>
+
+# A separate loopback listener reports the release actually loaded in a worker.
+# Choose another unused loopback port if necessary; also pass --status-url to
+# pragmachange-apache. Do not ProxyPass this endpoint from a public listener.
+Listen 127.0.0.1:19001
+<VirtualHost 127.0.0.1:19001>
+    ServerName pragmachange-status.local
+    <Location /pragmachange-status>
+        SetHandler pragmachange-status
+        Require local
+    </Location>
+</VirtualHost>
